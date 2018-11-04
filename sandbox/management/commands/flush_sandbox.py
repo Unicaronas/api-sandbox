@@ -48,21 +48,14 @@ class Command(BaseCommand):
     """
     help = "Makes this a proper sandbox service by flushing some tables from time to time"
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument('flush_type', type=str, nargs='?', default='simple')
 
-        # If it's not monday
-        if datetime.today().weekday() != 0:
-            print('Flushing trips and alarms')
-            print('Un-migrating apps')
-            unmigrate_app('trips')
-            unmigrate_app('alarms')
-            print('Un-migration complete')
-            print('Migrating apps')
-            migrate_app('trips')
-            migrate_app('alarms')
-            print('Migration complete')
-            print('Flush complete')
-        else:
+    def handle(self, *args, **options):
+        flush_type = options.get('flush_type')
+
+        # If it's monday or the flush type was set to full
+        if datetime.today().weekday() == 0 or flush_type == 'full':
             print('Flushing project')
             call_command(
                 'flush',
@@ -73,6 +66,17 @@ class Command(BaseCommand):
             print('Creating superuser')
             create_superuser()
             print('Superuser created')
+        else:
+            print('Flushing trips and alarms')
+            print('Un-migrating apps')
+            unmigrate_app('trips')
+            unmigrate_app('alarms')
+            print('Un-migration complete')
+            print('Migrating apps')
+            migrate_app('trips')
+            migrate_app('alarms')
+            print('Migration complete')
+            print('Flush complete')
 
         # Call snitch
         requests.get(os.environ.get('DEAD_MAN_SNITCH', 'http://google.com'))
