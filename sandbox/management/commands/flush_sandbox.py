@@ -1,4 +1,5 @@
 import os
+import requests
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.contrib.auth.models import User
@@ -72,3 +73,6 @@ class Command(BaseCommand):
             print('Creating superuser')
             create_superuser()
             print('Superuser created')
+
+        # Call snitch
+        requests.get(os.environ.get('DEAD_MAN_SNITCH', 'http://google.com'))
