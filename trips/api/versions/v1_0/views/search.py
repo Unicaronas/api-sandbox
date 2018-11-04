@@ -54,7 +54,7 @@ class SearchTripViewset(
         qs = qs.filter(seats_left__gt=0)
         qs = qs.filter(datetime__gt=timezone.now())
         # Only list trips created by the app
-        qs = qs.filter(application=self.auth.application)
+        qs = qs.filter(application=self.request.auth.application)
         return qs
 
     def get_serializer_class(self):
