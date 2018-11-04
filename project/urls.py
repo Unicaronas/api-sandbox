@@ -79,7 +79,7 @@ urlpatterns += admin_patterns
 urlpatterns += account_patterns
 urlpatterns += oauth_patterns
 urlpatterns += third_parties_patterns
-urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))]
+# urlpatterns += [path('silk/', include('silk.urls', namespace='silk'))] Remove silk
 urlpatterns += [
     path('status/', watchman_views.dashboard, name='watchman-dashboard'),
     path('status/ping', watchman_views.ping, name='watchman-ping'),

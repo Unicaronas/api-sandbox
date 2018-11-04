@@ -37,9 +37,6 @@ SECRET_PRIME = int(os.environ.get('SECRET_PRIME', '1'))
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = eval(os.environ.get('DEBUG', 'False').capitalize())
 
-# manage.py test mode that disables fb connection stuff
-TEST_MODE = eval(os.environ.get('TEST_MODE', 'False').capitalize())
-
 ALLOWED_HOSTS = eval(os.environ.get('ALLOWED_HOSTS', '["*"]'))
 
 # Sentry
@@ -69,9 +66,9 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'allauth.socialaccount.providers.facebook',
-    'allauth.socialaccount.providers.github',
-    'allauth.socialaccount.providers.google',
+    # 'allauth.socialaccount.providers.facebook', Disable social login
+    # 'allauth.socialaccount.providers.github', Disable social login
+    # 'allauth.socialaccount.providers.google', Disable social login
 
     'oauth',
     'user_data',
@@ -79,6 +76,7 @@ INSTALLED_APPS = [
     'search',
     'third_parties',
     'alarms',
+    'sandbox',  # Sandbox configs
 
     'maintenance_mode',
 
@@ -95,9 +93,9 @@ INSTALLED_APPS = [
     'analytical',
 
     'drf_yasg',
-    'silk',
-    'nplusone.ext.django',
-    'djcelery_email',
+    # 'silk', Disable silk
+    # 'nplusone.ext.django', Disable n plus one
+    # 'djcelery_email', Disable emailing
     'phonenumber_field',
     'watchman',
 
@@ -107,8 +105,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    'silk.middleware.SilkyMiddleware',
-    'nplusone.ext.django.NPlusOneMiddleware',
+    # 'silk.middleware.SilkyMiddleware', Remove silk
+    # 'nplusone.ext.django.NPlusOneMiddleware', Remove nplusone
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -255,7 +253,8 @@ SERVER_EMAIL = os.environ.get('SERVER_EMAIL', EMAIL_HOST_USER)
 
 ADMINS = [('Admin', os.environ.get('ADMIN_ACCOUNT')), ]
 
-EMAIL_BACKEND = 'djcelery_email.backends.CeleryEmailBackend'
+# No emails are sent
+EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
 
 # Debug Toolbar
@@ -334,7 +333,7 @@ ACCOUNT_PRESERVE_USERNAME_CASING = False
 ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none"  # Do not require email verification
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
 ACCOUNT_FORMS = {
     'signup': 'user_data.forms.CustomSignupForm',
@@ -405,7 +404,7 @@ SILKY_AUTHORISATION = True
 SILKY_PERMISSIONS = lambda user: user.is_superuser
 SILKY_META = True
 SILKY_MAX_RECORDED_REQUESTS = 10**3
-SILKY_INTERCEPT_PERCENT = 100 if DEBUG else 0
+SILKY_INTERCEPT_PERCENT = 0
 
 
 # Watchman
