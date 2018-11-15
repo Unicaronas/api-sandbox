@@ -44,20 +44,38 @@ MUSIC_CHOICES = (
 
 UNIVERSITY_CHOICES = (
     ('unicamp', 'Unicamp'),
+    ('pucc', 'PUC-Campinas'),
+    ('usp', 'USP'),
 )
 
 UNIVERSITY_EMAIL_VALIDATORS = {
     'unicamp': UniRegexValidator(
-        r'^(([a-zA-Z]\d{5,7}@dac.unicamp.br)|([a-zA-Z]\d{5,7}@g.unicamp.br))$',
+        r'^([a-zA-Z\.-_]+@([a-zA-Z-_]+\.)*unicamp\.br)$',
         "Email inválido para {0}"
     ),
+    'pucc': UniRegexValidator(
+        r'^[a-zA-Z\.-_]+@puccampinas\.edu\.br$',
+        "Email inválido para {0}"
+    ),
+    'usp': UniRegexValidator(
+        r'^([a-zA-Z\.-_]+@([a-zA-Z-_]+\.)*usp\.br)$',
+        "Email inválido para {0}"
+    )
 }
 
 UNIVERSITY_ID_VALIDATORS = {
     'unicamp': UniRegexValidator(
         r'^\d{5,7}$',
-        "ID inválido para {0}"
+        "RA inválido para {0}"
     ),
+    'pucc': UniRegexValidator(
+        r'^\d{8}$',
+        "RA inválido para {0}"
+    ),
+    'usp': UniRegexValidator(
+        r'^\d{4,10}$',
+        "RA inválido para {0}"
+    )
 }
 
 
