@@ -25,7 +25,7 @@ class Alarm(models.Model):
     origin_point = models.PointField("Coordenadas de origem da carona")
     origin_radius = models.FloatField(
         "Raio de pesquisa da origem em km",
-        default=5,
+        default=10,
         validators=[validators.MaxValueValidator(10), validators.MinValueValidator(0.05)],
     )
     destination = models.CharField(
@@ -35,7 +35,7 @@ class Alarm(models.Model):
     destination_point = models.PointField("Coordenadas de destino da carona")
     destination_radius = models.FloatField(
         "Raio de pesquisa do destino em km",
-        default=5,
+        default=10,
         validators=[validators.MaxValueValidator(20), validators.MinValueValidator(0.05)],
     )
     price = models.PositiveSmallIntegerField("Preço máximo da carona em reais", null=True)
@@ -49,13 +49,7 @@ class Alarm(models.Model):
     )
 
     @classmethod
-    def find_and_send(cls, trip):
-        """Find and send alarms
-        Takes a newly created trip and searches
-        through all alarms to find matches.
-        If any are found, send them.
-        """
-
+    def find(cls, trip):
         # Start by filtering the easy ones
         # and then filter using expensive fields
         alarms = cls.objects.exclude(
@@ -89,6 +83,23 @@ class Alarm(models.Model):
             # Filter destination
             destination_distance__lte=F('destination_radius') * 1000
         )
+
+        return alarms
+
+    @classmethod
+    def send(cls, alarms, trip):
         alarm_webhooks.MultipleAlarmsWebhook(alarms, trip).send()
+
+    @classmethod
+    def find_and_send(cls, trip):
+        """Find and send alarms
+        Takes a newly created trip and searches
+        through all alarms to find matches.
+        If any are found, send them.
+        """
+
+        alarms = cls.find(trip)
+        cls.send(alarms, trip)
+
         # Clear selected alarms
         alarms.delete()
