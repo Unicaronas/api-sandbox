@@ -95,16 +95,10 @@ INSTALLED_APPS = [
     'analytical',
 
     'drf_yasg',
-<<<<<<< HEAD
     # 'silk', Disable silk
     # 'nplusone.ext.django', Disable n plus one
     # 'djcelery_email', Disable emailing
-=======
-    'silk',
-    'nplusone.ext.django',
-    'djcelery_email',
     'django_celery_beat',
->>>>>>> 6e63e95e4fa6f0d9f31e61b30562e40539f6d01b
     'phonenumber_field',
     'watchman',
 
