@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 import os
 import dj_database_url
+from datetime import timedelta
+from celery.schedules import crontab
 
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -93,9 +95,16 @@ INSTALLED_APPS = [
     'analytical',
 
     'drf_yasg',
+<<<<<<< HEAD
     # 'silk', Disable silk
     # 'nplusone.ext.django', Disable n plus one
     # 'djcelery_email', Disable emailing
+=======
+    'silk',
+    'nplusone.ext.django',
+    'djcelery_email',
+    'django_celery_beat',
+>>>>>>> 6e63e95e4fa6f0d9f31e61b30562e40539f6d01b
     'phonenumber_field',
     'watchman',
 
@@ -229,6 +238,16 @@ AWS_AUTO_CREATE_BUCKET = True
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 CELERY_BROKER_URL = REDIS_URL
 CELERY_IMPORTS = ['project.tasks']
+CELERY_BEAT_SCHEDULE = {
+    'Clear old OAuth2 tokens': {
+        'task': 'oauth.tasks.clear_oauth_tokens',
+        'schedule': crontab(minute=0, hour=3)
+    },
+    'Clear old alarms': {
+        'task': 'alarms.tasks.clear_alarms',
+        'schedule': crontab(minute=30, hour=3)
+    }
+}
 
 
 # Cache settings
@@ -305,6 +324,7 @@ OAUTH2_PROVIDER = {
     'SCOPES_BACKEND_CLASS': 'oauth.scopes.CustomSettingsScopes',
     "REFRESH_TOKEN_GRACE_PERIOD_SECONDS": 120,
     "ACCESS_TOKEN_EXPIRE_SECONDS": 3600,
+    "REFRESH_TOKEN_EXPIRE_SECONDS": timedelta(days=60)  # Refresh tokens live up to 60 days
 }
 OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth.Application'
 
@@ -354,6 +374,7 @@ SOCIALACCOUNT_FORMS = {
 ACCOUNT_SIGNUP_FORM_CLASS = 'user_data.forms2.ExtraSignupFields'
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = True
+# ACCOUNT_ADAPTER = "project.adapters.AccountAdapter"
 
 
 def ACCOUNT_USER_DISPLAY(user):
@@ -382,7 +403,9 @@ SWAGGER_SETTINGS = {
             'description': """
 OAuth2 é uma forma de autenticação que permite que seu aplicativo obtenha acesso granular aos dados dos seus usuários. Seu usuário tem controle total sobre quais informações deseja compartilhar e você acessa a API usando endpoints comuns HTTP. OAuth2 possui flows para aplicativos web, desktop e mobile, todos implementados na API do Unicaronas. Para saber mais, [visite o guia de OAuth2](/what_is_oauth/)
 
-Abaixo você encontrará os `scopes` disponíveis e suas descrições, além das URLs de autorização e troca de tokens.""",
+Abaixo você encontrará os `scopes` disponíveis e suas descrições, além das URLs de autorização e troca de tokens.
+
+*Atenção!* `refresh_token`s do Unicaronas têm vida útil de 60 dias e tokens antigos são removidos todo dia.""",
             'authorizationUrl': f'{ROOT_URL}/o/authorize/',
             'tokenUrl': f'{ROOT_URL}/o/token/',
             'flow': 'accessCode',
@@ -446,6 +469,8 @@ FACEBOOK_HANDLE = os.environ.get('FACEBOOK_HANDLE', 'Unicaronas2.0')
 # BlaBlaCar API Key
 BLABLACAR_API_KEY = os.environ.get('BLABLACAR_API_KEY')
 
+# Facebook Page token
+FACEBOOK_PAGE_ACCESS_TOKEN = os.environ.get('FACEBOOK_PAGE_ACCESS_TOKEN')
 
 # Get GDAL_LIBRARY_PATH from env during heroku's build
 _GDAL_LIBRARY_PATH = os.getenv('GDAL_LIBRARY_PATH', None)

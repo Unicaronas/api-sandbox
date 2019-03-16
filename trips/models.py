@@ -1,12 +1,15 @@
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.contrib.postgres.fields import JSONField
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.core import validators
 from oauth2_provider.settings import oauth2_settings
 from project.utils import import_current_version_module
+from alarms.tasks import dispatch_alarms
 from .exceptions import PassengerBookedError, TripFullError, PassengerNotBookedError, UserNotDriverError, PassengerApprovedError, PassengerDeniedError, PassengerPendingError, NotEnoughSeatsError
 from .utils import user_is_driver
+from .tasks import publish_new_trip_on_fb
 # Create your models here.
 
 
@@ -26,11 +29,21 @@ class Trip(models.Model):
         max_length=500
     )
     origin_point = models.PointField("Coordenadas de origem da carona")
+    origin_address_components = JSONField(
+        default=list,
+        verbose_name='Componentes do endereço de origem',
+        null=True
+    )
     destination = models.CharField(
         "Enderço de destino da carona",
         max_length=500
     )
     destination_point = models.PointField("Coordenadas de destino da carona")
+    destination_address_components = JSONField(
+        default=list,
+        verbose_name='Componentes do endereço de origem',
+        null=True
+    )
     price = models.PositiveSmallIntegerField("Preço da carona em reais")
     datetime = models.DateTimeField("Datetime de saída da carona")
     max_seats = models.PositiveSmallIntegerField(
@@ -50,6 +63,25 @@ class Trip(models.Model):
         on_delete=models.SET_NULL,
         null=True
     )
+
+    def get_address_component(self, component, source, short=False):
+        attr = 'short_name' if short else 'long_name'
+        try:
+            return next(filter(lambda comp: component in comp['types'], getattr(self, source))).get(attr)
+        except StopIteration:
+            return None
+
+    def get_origin_adm_area_2(self, short=False):
+        return self.get_address_component('administrative_area_level_2', 'origin_address_components', short)
+
+    def get_origin_adm_area_1(self, short=False):
+        return self.get_address_component('administrative_area_level_1', 'origin_address_components', short)
+
+    def get_destination_adm_area_2(self, short=False):
+        return self.get_address_component('administrative_area_level_2', 'destination_address_components', short)
+
+    def get_destination_adm_area_1(self, short=False):
+        return self.get_address_component('administrative_area_level_1', 'destination_address_components', short)
 
     def get_seats_left(self):
         """Quantos assentos restam na carona
@@ -143,8 +175,12 @@ class Trip(models.Model):
         """Creates a trip, checking if the user is a driver"""
         if not user_is_driver(user):
             raise UserNotDriverError(user.get_full_name() + ' não é motorista')
-        trip = cls(user=user, **kwargs)
-        trip.save()
+        trip = cls.objects.create(user=user, **kwargs)
+
+        # Dispatch alarms announcing the new trip to users
+        dispatch_alarms.delay(trip.id)
+        # Publish on Facebook if enabled
+        publish_new_trip_on_fb.delay(trip.id)
         return trip
 
     def __str__(self):

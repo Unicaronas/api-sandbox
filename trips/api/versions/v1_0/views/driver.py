@@ -13,11 +13,10 @@ from project.filters import LocalizedOrderingFilter
 from oauth2_provider.models import get_application_model
 from oauth.exceptions import InvalidScopedUserId
 from user_data.permissions import UserIsDriver
-from alarms.tasks import dispatch_alarms
 from ..filters import BasicTripFilterSet
 from ..serializers import DriverTripCreateUpdateSerializer, DriverTripListRetrieveSerializer, PassengerSerializer, DriverActionsSerializer
 from .....models import Trip, Passenger
-from .....exceptions import PassengerPendingError, PassengerApprovedError, PassengerDeniedError, TripFullError
+from .....exceptions import PassengerPendingError, PassengerApprovedError, PassengerDeniedError, TripFullError, UserNotDriverError
 
 
 class DriverTripViewset(
@@ -91,6 +90,9 @@ class DriverTripViewset(
         Para acessar, use a `ID` de uma carona que o usuário é motorista.
 
         > **Dica:** Você também pode usar os parâmetros GET `fields` e `exclude` para filtrar os campos retornados pela API
+
+        **Atenção:** `origin_address_components` e `destination_address_components`, partes da resposta, contém os dados de `address_components` da [API de Geocoding do Google](https://developers.google.com/maps/documentation/geocoding/intro).
+        Por serem features novas, podem ser nulos para back-compatibility
         """
         return super().retrieve(*args, **kwargs)
 
@@ -117,6 +119,9 @@ class DriverTripViewset(
         Esse endpoint suporta ordenação por `price` e por `datetime`.
 
         > **Dica:** Você também pode usar os parâmetros GET `fields` e `exclude` para filtrar os campos retornados pela API
+
+        **Atenção:** `origin_address_components` e `destination_address_components`, partes da resposta, contém os dados de `address_components` da [API de Geocoding do Google](https://developers.google.com/maps/documentation/geocoding/intro).
+        Por serem features novas, podem ser nulos para back-compatibility
         """
         return super().list(*args, **kwargs)
 
@@ -155,12 +160,12 @@ class DriverTripViewset(
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instance = self.perform_create(serializer)
+        try:
+            instance = self.perform_create(serializer)
+        except UserNotDriverError:
+            raise ValidationError({'detail': 'Apenas motoristas podem realizar essa operação'}, code=status.HTTP_400_BAD_REQUEST)
         serializer = DriverTripListRetrieveSerializer(instance=instance, context=self.get_serializer_context())
         headers = self.get_success_headers(serializer.data)
-
-        # Dispatch alarms announcing the new trip to users
-        dispatch_alarms.delay(instance.id)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
