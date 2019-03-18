@@ -45,19 +45,35 @@ class SearchTripViewset(
     }
 
     def get_queryset(self):
+        """Get Queryset
+        Show any trip to any logged in user, including
+        the driver, passengers, if the trip is full and if
+        it already happened.
+
+        Only list and allow changes on trips that are not full, didn't happen,
+        don't belong to the user and the user is not a passenger
+        """
         qs = super().get_queryset()
-        qs = qs.exclude(passengers__user__in=[self.request.user])
-        qs = qs.exclude(user=self.request.user)
+
+        # Define a full trip
         seats_left = F('max_seats') - Coalesce(
             Sum(
                 'passengers__seats',
                 filter=~Q(passengers__status="denied")
             ), 0)
         qs = qs.annotate(seats_left=seats_left)
-        qs = qs.filter(seats_left__gt=0)
-        qs = qs.filter(datetime__gt=timezone.now())
         # Only list trips created by the app
         qs = qs.filter(application=self.request.auth.application)
+        if self.action != 'retrieve':
+            # If not viewing the details of a trip
+            # Hide old trips
+            qs = qs.filter(datetime__gt=timezone.now())
+            # Exclude the driver
+            qs = qs.exclude(user=self.request.user)
+            # Exclude the passengers
+            qs = qs.exclude(passengers__user__in=[self.request.user])
+            # Exclude full trips
+            qs = qs.filter(seats_left__gt=0)
         return qs
 
     def get_serializer_class(self):
@@ -83,7 +99,7 @@ class SearchTripViewset(
     def retrieve(self, *args, **kwargs):
         """Detalhes de uma carona
 
-        Permite acessar detalhes de caronas **que ainda não aconteceram**, que **não estão cheias** e que o **usuário não é passageiro ou motorista**.
+        Permite acessar detalhes de caronas.
 
         Para acessar, use a ID de uma carona pesquisada.
 
