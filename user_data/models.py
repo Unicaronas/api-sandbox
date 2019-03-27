@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MinValueValidator
 from phonenumber_field.modelfields import PhoneNumberField
 from project.utils import import_current_version_module
 from .validators import UniRegexValidator
@@ -44,22 +44,32 @@ MUSIC_CHOICES = (
 
 UNIVERSITY_CHOICES = (
     ('unicamp', 'Unicamp'),
-    ('pucc', 'PUC-Campinas'),
     ('usp', 'USP'),
+    ('unesp', 'Unesp'),
+    ('unifesp', 'Unifesp'),
+    ('pucc', 'PUC-Campinas'),
     ('ifsp', 'IFSP')
 )
 
 UNIVERSITY_EMAIL_VALIDATORS = {
     'unicamp': UniRegexValidator(
-        r'^([a-zA-Z\.-_]+@([a-zA-Z-_]+\.)+unicamp\.br)$',
-        "Email inválido para {0}"
-    ),
-    'pucc': UniRegexValidator(
-        r'^[a-zA-Z\.-_]+@puccampinas\.edu\.br$',
+        r'^([a-zA-Z\.-_]+@([a-zA-Z-_]+\.)*unicamp\.br)$',
         "Email inválido para {0}"
     ),
     'usp': UniRegexValidator(
         r'^([a-zA-Z\.-_]+@([a-zA-Z-_]+\.)*usp\.br)$',
+        "Email inválido para {0}"
+    ),
+    'unesp': UniRegexValidator(
+        r'^[a-zA-Z\.-_]+@unesp\.br$',
+        "Email inválido para {0}"
+    ),
+    'unifesp': UniRegexValidator(
+        r'^[a-zA-Z\.-_]+@unifesp\.br$',
+        "Email inválido para {0}"
+    ),
+    'pucc': UniRegexValidator(
+        r'^[a-zA-Z\.-_]+@puccampinas\.edu\.br$',
         "Email inválido para {0}"
     ),
     'ifsp': UniRegexValidator(
@@ -73,12 +83,20 @@ UNIVERSITY_ID_VALIDATORS = {
         r'^\d{5,7}$',
         "RA inválido para {0}"
     ),
-    'pucc': UniRegexValidator(
-        r'^\d{8}$',
-        "RA inválido para {0}"
-    ),
     'usp': UniRegexValidator(
         r'^\d{4,10}$',
+        "RA inválido para {0}"
+    ),
+    'unesp': UniRegexValidator(
+        r'^\d{7,11}$',
+        "RA inválido para {0}"
+    ),
+    'unifesp': UniRegexValidator(
+        r'^\d{7,11}$',
+        "RA inválido para {0}"
+    ),
+    'pucc': UniRegexValidator(
+        r'^\d{8}$',
         "RA inválido para {0}"
     ),
     'ifsp': UniRegexValidator(
@@ -134,8 +152,7 @@ class Student(models.Model):
         'Ano de ingresso',
         help_text="Ano que você entrou na universidade",
         validators=[
-            MaxValueValidator(timezone.now().year),
-            MinValueValidator(timezone.now().year - 20)
+            MinValueValidator(timezone.now().year - 25)
         ]
     )
     course = models.CharField('Curso', max_length=100)
@@ -223,3 +240,13 @@ class Preferences(models.Model):
 
     def __str__(self):
         return f"Preferences de {self.user}"
+
+
+class MissingUniversity(models.Model):
+    """Universities that are missing from the API"""
+
+    name = models.CharField('Seu nome', max_length=50)
+    email = models.EmailField('Seu email para contato')
+    university_name = models.CharField('Nome ou sigla da universidade/faculdade', max_length=50)
+    university_id = models.CharField('ID acadêmica (RA, etc)', max_length=50)
+    university_email = models.EmailField('Email acadêmico')

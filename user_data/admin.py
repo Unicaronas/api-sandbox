@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Student, Driver, Preferences
+from .models import Profile, Student, Driver, Preferences, MissingUniversity
 
 
 @admin.register(Profile)
@@ -19,7 +19,8 @@ class StudentAdmin(admin.ModelAdmin):
         'enroll_year',
         'course',
     )
-    list_filter = ('user',)
+    list_filter = ('university',)
+    search_fields = ('user', 'university_id',)
 
 
 @admin.register(Driver)
@@ -35,7 +36,7 @@ class DriverAdmin(admin.ModelAdmin):
         'likes_music',
         'likes_talking',
     )
-    list_filter = ('user',)
+    search_fields = ('user',)
 
 
 @admin.register(Preferences)
@@ -48,8 +49,22 @@ class PreferencesAdmin(admin.ModelAdmin):
         'news_notifications',
     )
     list_filter = (
-        'user',
         'updates_notifications',
         'ratings_notifications',
         'news_notifications',
     )
+    search_fields = ('user',)
+
+
+@admin.register(MissingUniversity)
+class MissingUniversityAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'name',
+        'email',
+        'university_name',
+        'university_id',
+        'university_email'
+    )
+    list_filter = ('university_name', 'name')
+    search_fields = ('name', 'email', 'university_name', )
