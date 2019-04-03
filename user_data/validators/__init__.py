@@ -1,1 +1,2 @@
-from .regex import UniRegexValidator
+from .regex import UniRegexValidator, FallbackUniRegexValidator
+

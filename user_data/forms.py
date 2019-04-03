@@ -7,18 +7,24 @@ from .models import UNIVERSITY_EMAIL_VALIDATORS, UNIVERSITY_ID_VALIDATORS, UNIVE
 
 class CustomSignupForm(SignupForm):
 
-    username = forms.CharField(label="ID acadêmica (RA, etc)",
-                               min_length=app_settings.USERNAME_MIN_LENGTH,
-                               widget=forms.TextInput(
-                                   attrs={'placeholder':
-                                          '123456',
-                                          'autofocus': 'autofocus',
-                                          'data-validation': 'required'}))
+    username = forms.CharField(
+        label="ID acadêmica (RA, etc)",
+        min_length=app_settings.USERNAME_MIN_LENGTH,
+        max_length=30,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder':
+                '123456',
+                'autofocus': 'autofocus',
+                'data-validation': 'required length',
+                'data-validation-length': 'max30'
+            }
+        ))
     email = forms.EmailField(
         label="Email universitário",
         widget=forms.TextInput(
             attrs={'type': 'email',
-                   'placeholder': 'Seu email na sua universidade',
+                   'placeholder': 'meu@email.com',
                    'data-validation': 'required email'}))
 
     def __init__(self, *args, **kwargs):
@@ -27,7 +33,7 @@ class CustomSignupForm(SignupForm):
         self.fields['email2'].label = "Email acadêmico (novamente)"
         self.fields['email2'].widget = forms.TextInput(
             attrs={'type': 'email',
-                   'placeholder': 'Confirme seu email universitário',
+                   'placeholder': 'meu@email.com',
                    'data-validation': 'required email confirmation',
                    'data-validation-confirm': 'email'})
         self.fields['password1'].widget = forms.TextInput(
@@ -73,18 +79,24 @@ class CustomSignupForm(SignupForm):
 
 class CustomSocialSignupForm(SocialSignupForm):
 
-    username = forms.CharField(label="ID acadêmica (RA, etc)",
-                               min_length=app_settings.USERNAME_MIN_LENGTH,
-                               widget=forms.TextInput(
-                                   attrs={'placeholder':
-                                          '123456',
-                                          'autofocus': 'autofocus',
-                                          'data-validation': 'required'}))
+    username = forms.CharField(
+        label="ID acadêmica (RA, etc)",
+        min_length=app_settings.USERNAME_MIN_LENGTH,
+        max_length=30,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder':
+                '123456',
+                'autofocus': 'autofocus',
+                'data-validation': 'required length',
+                'data-validation-length': 'max30'
+            }
+        ))
     email = forms.EmailField(
         label="Email universitário",
         widget=forms.TextInput(
             attrs={'type': 'email',
-                   'placeholder': 'Seu email na sua universidade',
+                   'placeholder': 'meu@email.com',
                    'data-validation': 'required email'}))
 
     def __init__(self, *args, **kwargs):
@@ -93,7 +105,7 @@ class CustomSocialSignupForm(SocialSignupForm):
         self.fields['email2'].label = "Email acadêmico (novamente)"
         self.fields['email2'].widget = forms.TextInput(
             attrs={'type': 'email',
-                   'placeholder': 'Confirme seu email universitário',
+                   'placeholder': 'meu@email.com',
                    'data-validation': 'required email confirmation',
                    'data-validation-confirm': 'email'})
         set_form_field_order(self, ['university'])
@@ -137,14 +149,18 @@ class CustomLoginForm(LoginForm):
         label="Sua universidade",
         widget=forms.Select(
             attrs={
-                "css": "ui fluid selection dropdown"
+                "css": "ui fluid search selection dropdown"
             }))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        login_widget = forms.TextInput(attrs={'placeholder':
-                                              'Seu RA, etc',
-                                              'autofocus': 'autofocus'})
+        login_widget = forms.TextInput(
+            attrs={
+                'placeholder':
+                'Seu RA, etc',
+                'autofocus': 'autofocus'
+            }
+        )
         login_field = forms.CharField(
             label="ID universitário",
             widget=login_widget)

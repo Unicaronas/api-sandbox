@@ -1,8 +1,9 @@
 from datetime import datetime
 from django import forms
+from django.core.validators import FileExtensionValidator
 from captcha.fields import ReCaptchaField
 from captcha.widgets import ReCaptchaV2Checkbox
-from .models import Profile, Student, Driver, Preferences
+from .models import Profile, Student, Driver, Preferences, StudentProof
 from .models import GENDER_CHOICES, PET_CHOICES, SMOKING_CHOICES, TALKING_CHOICES, MUSIC_CHOICES, UNIVERSITY_CHOICES
 from phonenumber_field.formfields import PhoneNumberField
 
@@ -11,13 +12,21 @@ class ExtraSignupFields(forms.Form):
     # Basic
     first_name = forms.CharField(
         label="Primeiro nome",
+        max_length=30,
         widget=forms.TextInput(
-            attrs={'data-validation': 'required'})
+            attrs={
+                'data-validation': 'required length',
+                'data-validation-length': 'max30'
+            })
     )
     last_name = forms.CharField(
         label="Sobrenome",
+        max_length=100,
         widget=forms.TextInput(
-            attrs={'data-validation': 'required'})
+            attrs={
+                'data-validation': 'required length',
+                'data-validation-length': 'max100'
+            })
     )
 
     # Profile
@@ -41,13 +50,20 @@ class ExtraSignupFields(forms.Form):
     # Student
     university = forms.ChoiceField(
         label="Sua universidade",
-        choices=UNIVERSITY_CHOICES
+        choices=UNIVERSITY_CHOICES,
+        widget=forms.Select(
+            attrs={
+                'class': 'ui search selection dropdown'
+            }
+        )
     )
     university_id = forms.CharField(required=False, widget=forms.HiddenInput())
     university_email = forms.CharField(
         required=False, widget=forms.HiddenInput())
     enroll_year = forms.IntegerField(
         label="Ano de ingresso",
+        max_value=datetime.now().year,
+        min_value=datetime.now().year - 25,
         widget=forms.TextInput(
             attrs={
                 'data-validation': 'number',
@@ -56,35 +72,45 @@ class ExtraSignupFields(forms.Form):
     )
     course = forms.CharField(
         label="Curso",
+        max_length=100,
         widget=forms.TextInput(
-            attrs={'data-validation': 'required'})
+            attrs={
+                'data-validation': 'required length',
+                'data-validation-length': 'max100'
+            })
     )
 
     # Driver info
     car_make = forms.CharField(
         label="Marca do carro",
         required=False,
+        max_length=50,
         widget=forms.TextInput(
             attrs={
-                'data-validation': 'required',
+                'data-validation': 'required length',
+                'data-validation-length': 'max50',
                 'data-validation-depends-on': 'is_driver'
             })
     )
     car_model = forms.CharField(
         label="Modelo do carro",
         required=False,
+        max_length=50,
         widget=forms.TextInput(
             attrs={
-                'data-validation': 'required',
+                'data-validation': 'required length',
+                'data-validation-length': 'max50',
                 'data-validation-depends-on': 'is_driver'
             })
     )
     car_color = forms.CharField(
         label="Cor do carro",
         required=False,
+        max_length=30,
         widget=forms.TextInput(
             attrs={
-                'data-validation': 'required',
+                'data-validation': 'required length',
+                'data-validation-length': 'max30',
                 'data-validation-depends-on': 'is_driver'
             })
     )
@@ -109,6 +135,26 @@ class ExtraSignupFields(forms.Form):
         label="Curte conversar",
         required=False,
         choices=TALKING_CHOICES
+    )
+    student_proof = forms.FileField(
+        label='Certificado de matrícula/diploma/foto da carteirinha/etc',
+        allow_empty_file=True,
+        validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'png'])],
+        required=False,
+        widget=forms.FileInput(
+            attrs={
+                'data-validation': 'required size mime',
+                'data-validation-max-size': '5M',
+                'data-validation-allowing': 'jpg, png, pdf'
+            })
+    )
+    contact_email = forms.EmailField(
+        label='Email para contato após verificação',
+        required=False,
+        widget=forms.EmailInput(
+            attrs={
+                'data-validation': 'required email',
+            })
     )
 
     # Captcha
@@ -170,6 +216,12 @@ class ExtraSignupFields(forms.Form):
         # Process Notifications
         preferences = Preferences(user=user)
         preferences.save()
+
+        contact_email = cleaned_data.get('contact_email', cleaned_data['university_email'])
+
+        # Process Student Proof submission
+        if cleaned_data.get('student_proof', None):
+            StudentProof.create(student, contact_email, cleaned_data['student_proof'])
 
 
 class UniversityForm(forms.ModelForm):

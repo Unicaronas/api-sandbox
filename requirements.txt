@@ -14,17 +14,14 @@ django-versatileimagefield==1.10
 django-cors-headers==2.5.0
 django-celery-beat==1.4.0
 facebook-sdk==3.1.0
+django-admin-object-actions==0.1.5
 
 # Analytics
 django-analytical==2.5.0
 django-watchman==0.15.0
 
 # Profiling and Monitoring
-django-silk==3.0.1
 scout-apm==2.0.2
-
-# Optimization
-nplusone==1.0.0
 
 # Async
 celery==4.2.1

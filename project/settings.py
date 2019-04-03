@@ -41,6 +41,18 @@ DEBUG = eval(os.environ.get('DEBUG', 'False').capitalize())
 
 ALLOWED_HOSTS = eval(os.environ.get('ALLOWED_HOSTS', '["*"]'))
 
+# Debug Toolbar
+SHOW_TOOLBAR_CALLBACK = eval(os.environ.get('SHOW_TOOLBAR_CALLBACK', 'DEBUG'))
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda r: SHOW_TOOLBAR_CALLBACK and r.user.is_superuser  # disables it
+}
+
+# Maintenance mode
+MAINTENANCE_MODE = eval(os.environ.get('MAINTENANCE_MODE', 'False'))
+MAINTENANCE_MODE_TEMPLATE = 'project/errors/503.html'
+MAINTENANCE_MODE_IGNORE_ADMIN_SITE = True
+MAINTENANCE_MODE_IGNORE_SUPERUSER = True
+
 # Sentry
 
 if not DEBUG and os.environ.get('SENTRY_DSN'):
@@ -78,11 +90,6 @@ INSTALLED_APPS = [
     'search',
     'third_parties',
     'alarms',
-    'sandbox',  # Sandbox configs
-
-    'maintenance_mode',
-
-    'debug_toolbar',
 
     'oauth2_provider',
     'rest_framework',
@@ -95,21 +102,18 @@ INSTALLED_APPS = [
     'analytical',
 
     'drf_yasg',
-    # 'silk', Disable silk
-    # 'nplusone.ext.django', Disable n plus one
-    # 'djcelery_email', Disable emailing
+    # 'djcelery_email',
     'django_celery_beat',
     'phonenumber_field',
     'watchman',
 
     'storages',
     'versatileimagefield',
+    'admin_object_actions',
 ]
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    # 'silk.middleware.SilkyMiddleware', Remove silk
-    # 'nplusone.ext.django.NPlusOneMiddleware', Remove nplusone
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -118,9 +122,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'maintenance_mode.middleware.MaintenanceModeMiddleware',
+    'crum.CurrentRequestUserMiddleware',
 ]
+if SHOW_TOOLBAR_CALLBACK:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+if MAINTENANCE_MODE:
+    INSTALLED_APPS += ['maintenance_mode']
+    MIDDLEWARE += ['maintenance_mode.middleware.MaintenanceModeMiddleware']
 
 ROOT_URLCONF = 'project.urls'
 
@@ -156,13 +165,13 @@ DATABASES = {
 
 
 # Since the site is behind Cloudflare, manually set it to use https
-if eval(os.environ.get('USE_HTTPS', 'False')):
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    os.environ['wsgi.url_scheme'] = 'https'
-    os.environ['HTTPS'] = "on"
+# if eval(os.environ.get('USE_HTTPS', 'False')):
+#     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+#     SECURE_SSL_REDIRECT = True
+#     SESSION_COOKIE_SECURE = True
+#     CSRF_COOKIE_SECURE = True
+#     os.environ['wsgi.url_scheme'] = 'https'
+#     os.environ['HTTPS'] = "on"
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -207,26 +216,29 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-STATICFILES_FINDERS = (
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-)
-STATICFILES_DIRS = (
-    os.path.join(PROJECT_ROOT, 'static'),
-)
-
-STATIC_HOST = os.environ.get('STATIC_HOST', ROOT_URL)
-STATIC_URL = STATIC_HOST + '/static/'
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
 AWS_AUTO_CREATE_BUCKET = True
+
+FILE_UPLOAD_HANDLERS = ['django.core.files.uploadhandler.TemporaryFileUploadHandler']
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'staticfiles')
+STATIC_URL = '/static/'
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
+
+if not DEBUG and AWS_STORAGE_BUCKET_NAME:
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+STATICFILES_DIRS = (
+    os.path.join(PROJECT_ROOT, 'static'),
+)
 
 # Celery stuff
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
@@ -260,7 +272,7 @@ DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Email settings
@@ -277,20 +289,6 @@ ADMINS = [('Admin', os.environ.get('ADMIN_ACCOUNT')), ]
 
 # No emails are sent
 EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
-
-
-# Debug Toolbar
-SHOW_TOOLBAR_CALLBACK = eval(os.environ.get('SHOW_TOOLBAR_CALLBACK', 'DEBUG'))
-DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': lambda r: SHOW_TOOLBAR_CALLBACK and r.user.is_superuser  # disables it
-}
-
-
-# Maintenance mode
-MAINTENANCE_MODE = eval(os.environ.get('MAINTENANCE_MODE', 'False'))
-MAINTENANCE_MODE_TEMPLATE = 'project/errors/503.html'
-MAINTENANCE_MODE_IGNORE_ADMIN_SITE = True
-MAINTENANCE_MODE_IGNORE_SUPERUSER = True
 
 
 # OAuth2
@@ -389,7 +387,7 @@ else:
 
 # Documentation settings
 SWAGGER_SETTINGS = {
-    'DEFAULT_AUTO_SCHEMA_CLASS': 'project.swagger_schema.CustomTagAutoSchema',
+    'DEFAULT_AUTO_SCHEMA_CLASS': 'project.swagger_schema.CustomServersAutoSchema',
     'USE_SESSION_AUTH': False,
     'SECURITY_DEFINITIONS': {
         'OAuth2': {
@@ -413,6 +411,8 @@ Abaixo você encontrará os `scopes` disponíveis e suas descrições, além das
     },
 }
 
+PRODUCTION_SERVER = os.environ.get('PRODUCTION_SERVER', ROOT_URL)
+SANDBOX_SERVER = os.environ.get('SANDBOX_SERVER')
 
 # Phonenumbers
 PHONENUMBER_DB_FORMAT = 'NATIONAL'
@@ -424,16 +424,6 @@ GEOCODING_API_KEY = os.environ.get('GEOCODING_API_KEY')
 # Analytics
 GOOGLE_ANALYTICS_PROPERTY_ID = os.environ.get('GOOGLE_ANALYTICS_PROPERTY_ID')
 GOOGLE_ANALYTICS_SITE_SPEED = True
-
-
-# Profiling
-SILKY_PYTHON_PROFILER = True
-SILKY_AUTHENTICATION = True
-SILKY_AUTHORISATION = True
-SILKY_PERMISSIONS = lambda user: user.is_superuser
-SILKY_META = True
-SILKY_MAX_RECORDED_REQUESTS = 10**3
-SILKY_INTERCEPT_PERCENT = 0
 
 
 # Watchman
@@ -478,3 +468,6 @@ if _GEOS_LIBRARY_PATH:
 # CORS Settings
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_URLS_REGEX = r'^(\/api\/.*|\/o\/token\/)$'
+
+# Total Virus API
+VIRUS_TOTAL_API_KEY = os.getenv('VIRUS_TOTAL_API_KEY')
