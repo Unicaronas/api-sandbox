@@ -9,6 +9,7 @@ Werkzeug==0.14.1
 django-debug-toolbar==1.11
 django-maintenance-mode==0.13.0
 django-phonenumber-field==2.2.0
+phonenumbers==8.10.6
 pillow==5.4.1
 django-versatileimagefield==1.10
 django-cors-headers==2.5.0
@@ -43,7 +44,7 @@ drf-yasg==1.14.0
 django-allauth==0.39.1
 
 # oauth2
-https://github.com/Maronato/django-oauth-toolkit/archive/pkce-support.zip
+https://github.com/Maronato/django-oauth-toolkit/archive/grace-rotation-fix.zip
 # django-oauth-toolkit
 cryptography==2.6.1
 
